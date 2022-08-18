@@ -14,14 +14,13 @@ namespace Nop.Core.Caching
     /// <summary>
     /// Represents a distributed cache 
     /// </summary>
-    public partial class DistributedCacheManager: CacheKeyService, ILocker, IStaticCacheManager
+    public abstract class DistributedCacheManager: CacheKeyService, ILocker, IStaticCacheManager
     {
         #region Fields
 
-        private readonly IDistributedCache _distributedCache;
-        private readonly ConcurrentDictionary<CacheKey, object> _items;
-        private static readonly List<string> _keys;
-        private static readonly AsyncLock _locker;
+        protected readonly IDistributedCache _distributedCache;
+        protected readonly ConcurrentDictionary<CacheKey, object> _items;
+        protected static readonly AsyncLock _locker;
 
         #endregion
 
@@ -30,10 +29,9 @@ namespace Nop.Core.Caching
         static DistributedCacheManager()
         {
             _locker = new AsyncLock();
-            _keys = new List<string>();
         }
 
-        public DistributedCacheManager(AppSettings appSettings, IDistributedCache distributedCache) :base(appSettings)
+        protected DistributedCacheManager(AppSettings appSettings, IDistributedCache distributedCache) :base(appSettings)
         {
             _distributedCache = distributedCache;
             _items = new ConcurrentDictionary<CacheKey, object>();
@@ -42,6 +40,44 @@ namespace Nop.Core.Caching
         #endregion
 
         #region Utilities
+
+        /// <summary>
+        /// Clear all data on this instance
+        /// </summary>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        protected void ClearInstanceData()
+        {
+            _items.Clear();
+        }
+
+        protected virtual void OnUpdateKey(CacheKey key, bool add = true)
+        {
+
+        }
+
+        /// <summary>
+        /// Remove items by cache key prefix
+        /// </summary>
+        /// <param name="prefix">Cache key prefix</param>
+        /// <param name="prefixParameters">Parameters to create cache key prefix</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        protected async Task RemoveByPrefixInstanceDataAsync(string prefix, params object[] prefixParameters)
+        {
+            using var _ = await _locker.LockAsync();
+
+            var regex = new Regex(prefix,
+                RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
+
+            var matchesKeys = new List<CacheKey>();
+
+            //get cache keys that matches pattern
+            matchesKeys.AddRange(_items.Keys.Where(key => regex.IsMatch(key.Key)).ToList());
+
+            //remove matching values
+            if (matchesKeys.Any())
+                foreach (var key in matchesKeys)
+                    _items.TryRemove(key, out var _);
+        }
 
         /// <summary>
         /// Prepare cache entry options for the passed key
@@ -74,10 +110,8 @@ namespace Nop.Core.Caching
 
             if (string.IsNullOrEmpty(json)) 
                 return (false, default);
-            
-            using var _ = await _locker.LockAsync();
-            if (!_keys.Contains(key.Key))
-                _keys.Add(key.Key);
+
+            OnUpdateKey(key);
 
             return (true, JsonConvert.DeserializeObject<T>(json));
         }
@@ -95,9 +129,7 @@ namespace Nop.Core.Caching
             if (string.IsNullOrEmpty(json))
                 return (false, default);
 
-            using var _ = _locker.Lock();
-            if (!_keys.Contains(key.Key))
-                _keys.Add(key.Key);
+            OnUpdateKey(key);
 
             return (true, JsonConvert.DeserializeObject<T>(json));
         }
@@ -114,9 +146,7 @@ namespace Nop.Core.Caching
 
             _distributedCache.SetString(key.Key, JsonConvert.SerializeObject(data), PrepareEntryOptions(key));
             _items.TryAdd(key, data);
-
-            using var _ = _locker.Lock();
-            _keys.Add(key.Key);
+            OnUpdateKey(key);
         }
 
         #endregion
@@ -256,10 +286,8 @@ namespace Nop.Core.Caching
             cacheKey = PrepareKey(cacheKey, cacheKeyParameters);
 
             await _distributedCache.RemoveAsync(cacheKey.Key);
-            _items.TryRemove(cacheKey, out var _);
-
-            using var _ = await _locker.LockAsync();
-            _keys.Remove(cacheKey.Key);
+            _items.TryRemove(cacheKey, out _);
+            OnUpdateKey(cacheKey, false);
         }
 
         /// <summary>
@@ -275,57 +303,12 @@ namespace Nop.Core.Caching
 
             await _distributedCache.SetStringAsync(key.Key, JsonConvert.SerializeObject(data), PrepareEntryOptions(key));
             _items.TryAdd(key, data);
-
-            using var _ = await _locker.LockAsync();
-            _keys.Add(key.Key);
+            OnUpdateKey(key);
         }
 
-        /// <summary>
-        /// Remove items by cache key prefix
-        /// </summary>
-        /// <param name="prefix">Cache key prefix</param>
-        /// <param name="prefixParameters">Parameters to create cache key prefix</param>
-        /// <returns>A task that represents the asynchronous operation</returns>
-        public async Task RemoveByPrefixAsync(string prefix, params object[] prefixParameters)
-        {
-            using var _ = await _locker.LockAsync();
+        public abstract Task RemoveByPrefixAsync(string prefix, params object[] prefixParameters);
 
-            prefix = PrepareKeyPrefix(prefix, prefixParameters);
-
-            var regex = new Regex(prefix,
-                RegexOptions.Singleline | RegexOptions.Compiled | RegexOptions.IgnoreCase);
-
-            var matchesKeys = new List<CacheKey>();
-
-            //get cache keys that matches pattern
-            matchesKeys.AddRange(_items.Keys.Where(key => regex.IsMatch(key.Key)).ToList());
-
-            //remove matching values
-            if (matchesKeys.Any())
-                foreach (var key in matchesKeys)
-                    _items.TryRemove(key, out var _);
-
-            foreach (var key in _keys.Where(key => key.StartsWith(prefix, StringComparison.InvariantCultureIgnoreCase)).ToList())
-            {
-                await _distributedCache.RemoveAsync(key);
-                _keys.Remove(key);
-            }
-        }
-
-        /// <summary>
-        /// Clear all cache data
-        /// </summary>
-        /// <returns>A task that represents the asynchronous operation</returns>
-        public async Task ClearAsync()
-        {
-            using var _ = await _locker.LockAsync();
-
-            foreach (var key in _keys) 
-                await _distributedCache.RemoveAsync(key);
-
-            _items.Clear();
-            _keys.Clear();
-        }
+        public abstract Task ClearAsync();
 
         /// <summary>
         /// Perform some action with exclusive lock

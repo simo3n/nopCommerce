@@ -43,6 +43,7 @@ using Nop.Services.Affiliates;
 using Nop.Services.Authentication.External;
 using Nop.Services.Authentication.MultiFactor;
 using Nop.Services.Blogs;
+using Nop.Services.Caching;
 using Nop.Services.Catalog;
 using Nop.Services.Cms;
 using Nop.Services.Common;
@@ -262,7 +263,7 @@ namespace Nop.Tests
 
             var distributedCache = new Mock<IDistributedCache>();
             services.AddSingleton(distributedCache.Object);
-            services.AddSingleton<DistributedCacheManager>();
+            services.AddSingleton<MemoryDistributedCacheManager>();
             
             //services
             services.AddTransient<IBackInStockSubscriptionService, BackInStockSubscriptionService>();

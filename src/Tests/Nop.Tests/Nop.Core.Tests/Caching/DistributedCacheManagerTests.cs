@@ -4,6 +4,7 @@ using System.Threading.Tasks;
 using Microsoft.Extensions.Caching.Distributed;
 using Moq;
 using Nop.Core.Caching;
+using Nop.Services.Caching;
 using NUnit.Framework;
 
 namespace Nop.Tests.Nop.Core.Tests.Caching
@@ -17,7 +18,7 @@ namespace Nop.Tests.Nop.Core.Tests.Caching
         [OneTimeSetUp]
         public void Setup()
         {
-            _staticCacheManager = GetService<DistributedCacheManager>();
+            _staticCacheManager = GetService<MemoryDistributedCacheManager>();
             _distributedCache = Mock.Get(GetService<IDistributedCache>());
         }
 
