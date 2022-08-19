@@ -757,6 +757,30 @@ namespace Nop.Services.Media
         }
 
         /// <summary>
+        /// Gets a picture for specified virtual path
+        /// </summary>
+        /// <param name="picturePath">Full virtual path of the picture</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public virtual async Task<Picture> GetPictureByPathAsync(string picturePath)
+        {
+            if (string.IsNullOrEmpty(picturePath))
+                throw new ArgumentNullException(nameof(picturePath));
+
+            if (!picturePath.StartsWith("~/"))
+                picturePath = $"~/{picturePath.TrimStart('~', '/')}";
+
+            new FileExtensionContentTypeProvider()
+                .TryGetContentType(picturePath, out var mimeType);
+            var fileName = _fileProvider.GetFileNameWithoutExtension(picturePath);
+            var virtualDirectoryName = picturePath[..(picturePath.LastIndexOf(fileName) - 1)];
+
+            return await _pictureRepository.Table.FirstOrDefaultAsync(p =>
+                string.Compare(p.SeoFilename, fileName, StringComparison.InvariantCultureIgnoreCase) == 0 &&
+                string.Compare(p.VirtualPath, virtualDirectoryName, StringComparison.InvariantCultureIgnoreCase) == 0 &&
+                string.Compare(p.MimeType, mimeType, StringComparison.InvariantCultureIgnoreCase) == 0);
+        }
+
+        /// <summary>
         /// Deletes a picture
         /// </summary>
         /// <param name="picture">Picture</param>

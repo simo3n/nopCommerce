@@ -4,9 +4,11 @@ using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Mvc.Infrastructure;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
+using Microsoft.Extensions.FileProviders;
 using Nop.Core;
 using Nop.Core.Caching;
 using Nop.Core.Configuration;
+using Nop.Core.Domain.Media;
 using Nop.Core.Events;
 using Nop.Core.Infrastructure;
 using Nop.Data;
@@ -257,15 +259,26 @@ namespace Nop.Web.Framework.Infrastructure
                 services.AddScoped<IPictureService, PictureService>();
 
             //roxy file manager service
-            services.AddTransient<DatabaseRoxyFilemanService>();
-            services.AddTransient<FileRoxyFilemanService>();
+            // services.AddTransient<DatabaseRoxyFilemanService>();
+            // services.AddTransient<FileRoxyFilemanService>();
 
-            services.AddScoped<IRoxyFilemanService>(serviceProvider =>
+            services.AddScoped<IRoxyFilemanService, FileRoxyFilemanService>();
+
+            services.AddScoped<IRoxyFilemanFileProvider>(serviceProvider =>
             {
-                return serviceProvider.GetRequiredService<IPictureService>().IsStoreInDbAsync().Result
-                    ? serviceProvider.GetRequiredService<DatabaseRoxyFilemanService>()
-                    : serviceProvider.GetRequiredService<FileRoxyFilemanService>();
+                var fileProvider = serviceProvider.GetRequiredService<INopFileProvider>();
+                var pictureService = serviceProvider.GetRequiredService<IPictureService>();
+                var mediaSettings = serviceProvider.GetRequiredService<MediaSettings>();
+
+                return new RoxyFilemanFileProvider(fileProvider, pictureService, mediaSettings);
             });
+
+            // services.AddScoped<IRoxyFilemanService>(serviceProvider =>
+            // {
+            //     return serviceProvider.GetRequiredService<IPictureService>().IsStoreInDbAsync().Result
+            //         ? serviceProvider.GetRequiredService<DatabaseRoxyFilemanService>()
+            //         : serviceProvider.GetRequiredService<FileRoxyFilemanService>();
+            // });
 
             //installation service
             if (!DataSettingsManager.IsDatabaseInstalled())

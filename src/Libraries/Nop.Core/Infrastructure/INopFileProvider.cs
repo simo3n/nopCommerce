@@ -12,6 +12,8 @@ namespace Nop.Core.Infrastructure
     /// </summary>
     public interface INopFileProvider : IFileProvider
     {
+        string WebRootPath { get; }
+
         /// <summary>
         /// Combines an array of strings into a path
         /// </summary>

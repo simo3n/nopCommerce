@@ -22,7 +22,10 @@ namespace Nop.Core.Infrastructure
         /// </summary>
         /// <param name="webHostEnvironment">Hosting environment</param>
         public NopFileProvider(IWebHostEnvironment webHostEnvironment)
-            : base(File.Exists(webHostEnvironment.ContentRootPath) ? Path.GetDirectoryName(webHostEnvironment.ContentRootPath) : webHostEnvironment.ContentRootPath)
+            : this(webHostEnvironment, File.Exists(webHostEnvironment.ContentRootPath) ? Path.GetDirectoryName(webHostEnvironment.ContentRootPath) : webHostEnvironment.ContentRootPath)
+        {}
+
+        public NopFileProvider(IWebHostEnvironment webHostEnvironment, string contentRoot) : base(contentRoot)
         {
             WebRootPath = File.Exists(webHostEnvironment.WebRootPath)
                 ? Path.GetDirectoryName(webHostEnvironment.WebRootPath)
@@ -587,6 +590,6 @@ namespace Nop.Core.Infrastructure
 
         #endregion
 
-        protected string WebRootPath { get; }
+        public string WebRootPath { get; }
     }
 }

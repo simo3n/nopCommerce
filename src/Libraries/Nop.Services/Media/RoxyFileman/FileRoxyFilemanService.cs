@@ -529,6 +529,9 @@ namespace Nop.Services.Media.RoxyFileman
         /// <returns>A task that represents the asynchronous operation</returns>
         public virtual async Task GetFilesAsync(string directoryPath, string type)
         {
+            if (!await IsPathAllowedAsync(directoryPath))
+                throw new Exception(await GetLanguageResourceAsync("E_UploadingFile"));
+
             directoryPath = await GetVirtualPathAsync(directoryPath);
             var files = await GetFilesByDirectoryAsync(GetFullPath(directoryPath), type);
             var response = GetJsonResponse();
@@ -696,6 +699,9 @@ namespace Nop.Services.Media.RoxyFileman
         /// <returns>A task that represents the asynchronous operation</returns>
         public virtual async Task CreateImageThumbnailAsync(string path)
         {
+            if (!await IsPathAllowedAsync(path))
+                throw new Exception(await GetLanguageResourceAsync("E_UploadingFile"));
+
             path = GetFullPath(await GetVirtualPathAsync(path));
 
             var file = File.ReadAllBytes(path);

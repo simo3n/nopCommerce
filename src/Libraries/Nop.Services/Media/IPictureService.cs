@@ -115,6 +115,13 @@ namespace Nop.Services.Media
         Task<Picture> GetPictureByIdAsync(int pictureId);
 
         /// <summary>
+        /// Gets a picture for specified virtual path
+        /// </summary>
+        /// <param name="picturePath">Full virtual path of the picture</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        Task<Picture> GetPictureByPathAsync(string picturePath);
+
+        /// <summary>
         /// Deletes a picture
         /// </summary>
         /// <param name="picture">Picture</param>

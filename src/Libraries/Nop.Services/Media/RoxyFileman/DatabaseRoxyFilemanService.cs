@@ -505,7 +505,7 @@ namespace Nop.Services.Media.RoxyFileman
 
                 return;
             }
-                
+
             var filePath = _fileProvider.GetAbsolutePath(_fileProvider.GetVirtualPath(sourcePath));
             var picture = await GetPictureByFileAsync(filePath);
 
