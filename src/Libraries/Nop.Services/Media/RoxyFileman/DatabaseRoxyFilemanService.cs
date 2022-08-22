@@ -478,7 +478,7 @@ namespace Nop.Services.Media.RoxyFileman
         {
             await base.MoveFileAsync(sourcePath, destinationPath);
 
-            if (!IsImage(sourcePath)) 
+            if (!IsImage(sourcePath))
                 return;
 
             var filePath = _fileProvider.GetAbsolutePath(sourcePath.Split('/'));
@@ -590,8 +590,6 @@ namespace Nop.Services.Media.RoxyFileman
 
             var pageIndex = 0;
             const int pageSize = 400;
-            _ = int.TryParse(await GetSettingAsync("MAX_IMAGE_WIDTH"), out var width);
-            _ = int.TryParse(await GetSettingAsync("MAX_IMAGE_HEIGHT"), out var height);
 
             try
             {
@@ -605,8 +603,10 @@ namespace Nop.Services.Media.RoxyFileman
                     if (!pictures.Any())
                         break;
 
+                    var roxyConfig = Singleton<RoxyFilemanConfig>.Instance;
+
                     foreach (var picture in pictures)
-                        await FlushImagesAsync(picture, width, height);
+                        await FlushImagesAsync(picture, roxyConfig.MAX_IMAGE_WIDTH, roxyConfig.MAX_IMAGE_HEIGHT);
 
                     if (removeOriginal)
                         await _pictureRepository.DeleteAsync(pictures, false);
@@ -629,10 +629,9 @@ namespace Nop.Services.Media.RoxyFileman
 
             foreach (var picture in await _pictureService.GetPicturesAsync(_fileProvider.GetVirtualPath(directoryPath)))
             {
-                _ = int.TryParse(await GetSettingAsync("MAX_IMAGE_WIDTH"), out var width);
-                _ = int.TryParse(await GetSettingAsync("MAX_IMAGE_HEIGHT"), out var height);
+                var roxyConfig = Singleton<RoxyFilemanConfig>.Instance;
 
-                await FlushImagesAsync(picture, width, height);
+                await FlushImagesAsync(picture, roxyConfig.MAX_IMAGE_WIDTH, roxyConfig.MAX_IMAGE_HEIGHT);
             }
         }
 

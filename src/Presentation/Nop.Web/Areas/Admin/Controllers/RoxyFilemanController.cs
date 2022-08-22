@@ -40,7 +40,7 @@ namespace Nop.Web.Areas.Admin.Controllers
         /// </summary>
         public virtual async Task CreateConfiguration()
         {
-            await _roxyFilemanService.CreateConfigurationAsync();
+            await _roxyFilemanService.ConfigureAsync();
         }
 
         /// <summary>

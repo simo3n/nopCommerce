@@ -1,3 +1,5 @@
+using System.Collections.Generic;
+using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
 
 namespace Nop.Services.Media.RoxyFileman
@@ -5,10 +7,15 @@ namespace Nop.Services.Media.RoxyFileman
     public interface IRoxyFilemanFileProvider : IFileProvider
     {
         /// <summary>
-        /// Returns the extension of the specified path string
+        /// Create configuration file for RoxyFileman
         /// </summary>
-        /// <param name="filePath">The path string from which to get the extension</param>
-        /// <returns>The extension of the specified path</returns>
-        string GetFileNameWithoutExtension(string filePath);
+        /// <param name="pathBase"></param>
+        /// <param name="lang"></param>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        Task<RoxyFilemanConfig> CreateConfigurationAsync(string pathBase, string lang);
+
+        void CopyDirectory(string sourcePath, string destinationPath);
+
+        IEnumerable<(string relativePath, int countFiles, int countDirectories)> GetDirectories(string type, bool isRecursive = true, string rootDirectoryPath = "");
     }
 }

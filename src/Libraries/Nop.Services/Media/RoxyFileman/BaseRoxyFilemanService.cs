@@ -1,5 +1,6 @@
 ﻿using System.Collections;
 using System.Collections.Generic;
+using System.Linq;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -64,21 +65,21 @@ namespace Nop.Services.Media.RoxyFileman
 
             var fileExtension = _fileProvider.GetFileExtension(path).Replace(".", string.Empty).ToLowerInvariant();
 
-            var forbiddenUploads = (await GetSettingAsync("FORBIDDEN_UPLOADS")).Trim().ToLowerInvariant();
+            var roxyConfig = Singleton<RoxyFilemanConfig>.Instance;
+
+            var forbiddenUploads = roxyConfig.FORBIDDEN_UPLOADS.Trim().ToLowerInvariant();
             if (!string.IsNullOrEmpty(forbiddenUploads))
             {
                 var forbiddenFileExtensions = new ArrayList(Regex.Split(forbiddenUploads, "\\s+"));
                 result = !forbiddenFileExtensions.Contains(fileExtension);
             }
 
-            var allowedUploads = (await GetSettingAsync("ALLOWED_UPLOADS")).Trim().ToLowerInvariant();
+            var allowedUploads = roxyConfig.ALLOWED_UPLOADS.Trim().ToLowerInvariant();
             if (string.IsNullOrEmpty(allowedUploads))
                 return result;
 
             var allowedFileExtensions = new ArrayList(Regex.Split(allowedUploads, "\\s+"));
-            result = allowedFileExtensions.Contains(fileExtension);
-
-            return result;
+            return allowedFileExtensions.Contains(fileExtension);
         }
 
         /// <summary>
@@ -176,7 +177,8 @@ namespace Nop.Services.Media.RoxyFileman
         /// </returns>
         protected virtual async Task<string> GetLanguageFileAsync()
         {
-            var languageCode = await GetSettingAsync("LANG");
+            var roxyConfig = Singleton<RoxyFilemanConfig>.Instance;
+            var languageCode = roxyConfig.LANG;
             var languageFile = $"{NopRoxyFilemanDefaults.LanguageDirectory}/{languageCode}.json";
 
             if (!_fileProvider.FileExists(GetFullPath(languageFile)))
@@ -205,9 +207,10 @@ namespace Nop.Services.Media.RoxyFileman
         /// </returns>
         protected virtual async Task<string> GetRootDirectoryAsync()
         {
-            var filesRoot = await GetSettingAsync("FILES_ROOT");
+            var roxyConfig = Singleton<RoxyFilemanConfig>.Instance;
+            var filesRoot = roxyConfig.FILES_ROOT;
 
-            var sessionPathKey = await GetSettingAsync("SESSION_PATH_KEY");
+            var sessionPathKey = roxyConfig.SESSION_PATH_KEY;
             if (!string.IsNullOrEmpty(sessionPathKey))
                 filesRoot = GetHttpContext().Session.GetString(sessionPathKey);
 
@@ -215,25 +218,6 @@ namespace Nop.Services.Media.RoxyFileman
                 filesRoot = NopRoxyFilemanDefaults.DefaultRootDirectory;
 
             return filesRoot;
-        }
-
-        /// <summary>
-        /// Get a value of the configuration setting
-        /// </summary>
-        /// <param name="key">Setting key</param>
-        /// <returns>
-        /// A task that represents the asynchronous operation
-        /// The task result contains the setting value
-        /// </returns>
-        protected virtual async Task<string> GetSettingAsync(string key)
-        {
-            if (_settings == null)
-                _settings = await ParseJsonAsync(GetFullPath(NopRoxyFilemanDefaults.ConfigurationFile));
-
-            if (_settings.TryGetValue(key, out var value))
-                return value;
-
-            return null;
         }
 
         /// <summary>
@@ -348,8 +332,15 @@ namespace Nop.Services.Media.RoxyFileman
         /// Create configuration file for RoxyFileman
         /// </summary>
         /// <returns>A task that represents the asynchronous operation</returns>
-        public virtual async Task CreateConfigurationAsync()
+        public virtual async Task<RoxyFilemanConfig> CreateConfigurationAsync()
         {
+            //check whether the path base has changed, otherwise there is no need to overwrite the configuration file
+            var currentPathBase = _httpContextAccessor.HttpContext.Request.PathBase.ToString();
+            if (Singleton<RoxyFilemanConfig>.Instance?.RETURN_URL_PREFIX?.Equals(currentPathBase) ?? false)
+            {
+                return Singleton<RoxyFilemanConfig>.Instance;
+            }
+
             var filePath = GetConfigurationFilePath();
 
             //create file if not exists
@@ -357,63 +348,21 @@ namespace Nop.Services.Media.RoxyFileman
 
             //try to read existing configuration
             var existingText = await _fileProvider.ReadAllTextAsync(filePath, Encoding.UTF8);
-            var existingConfiguration = JsonConvert.DeserializeAnonymousType(existingText, new
-            {
-                FILES_ROOT = string.Empty,
-                SESSION_PATH_KEY = string.Empty,
-                THUMBS_VIEW_WIDTH = string.Empty,
-                THUMBS_VIEW_HEIGHT = string.Empty,
-                PREVIEW_THUMB_WIDTH = string.Empty,
-                PREVIEW_THUMB_HEIGHT = string.Empty,
-                MAX_IMAGE_WIDTH = string.Empty,
-                MAX_IMAGE_HEIGHT = string.Empty,
-                DEFAULTVIEW = string.Empty,
-                FORBIDDEN_UPLOADS = string.Empty,
-                ALLOWED_UPLOADS = string.Empty,
-                FILEPERMISSIONS = string.Empty,
-                DIRPERMISSIONS = string.Empty,
-                LANG = string.Empty,
-                DATEFORMAT = string.Empty,
-                OPEN_LAST_DIR = string.Empty,
-                INTEGRATION = string.Empty,
-                RETURN_URL_PREFIX = string.Empty,
-                DIRLIST = string.Empty,
-                CREATEDIR = string.Empty,
-                DELETEDIR = string.Empty,
-                MOVEDIR = string.Empty,
-                COPYDIR = string.Empty,
-                RENAMEDIR = string.Empty,
-                FILESLIST = string.Empty,
-                UPLOAD = string.Empty,
-                DOWNLOAD = string.Empty,
-                DOWNLOADDIR = string.Empty,
-                DELETEFILE = string.Empty,
-                MOVEFILE = string.Empty,
-                COPYFILE = string.Empty,
-                RENAMEFILE = string.Empty,
-                GENERATETHUMB = string.Empty
-            });
-
-            //check whether the path base has changed, otherwise there is no need to overwrite the configuration file
-            var currentPathBase = _httpContextAccessor.HttpContext.Request.PathBase.ToString();
-            if (existingConfiguration?.RETURN_URL_PREFIX?.Equals(currentPathBase) ?? false)
-                return;
+            var existingConfiguration = JsonConvert.DeserializeObject<RoxyFilemanConfig>(existingText);
 
             //create configuration
-            var configuration = new
+            var configuration = new RoxyFilemanConfig
             {
                 FILES_ROOT = existingConfiguration?.FILES_ROOT ?? NopRoxyFilemanDefaults.DefaultRootDirectory,
                 SESSION_PATH_KEY = existingConfiguration?.SESSION_PATH_KEY ?? string.Empty,
-                THUMBS_VIEW_WIDTH = existingConfiguration?.THUMBS_VIEW_WIDTH ?? "140",
-                THUMBS_VIEW_HEIGHT = existingConfiguration?.THUMBS_VIEW_HEIGHT ?? "120",
-                PREVIEW_THUMB_WIDTH = existingConfiguration?.PREVIEW_THUMB_WIDTH ?? "300",
-                PREVIEW_THUMB_HEIGHT = existingConfiguration?.PREVIEW_THUMB_HEIGHT ?? "200",
-                MAX_IMAGE_WIDTH = existingConfiguration?.MAX_IMAGE_WIDTH ?? _mediaSettings.MaximumImageSize.ToString(),
-                MAX_IMAGE_HEIGHT = existingConfiguration?.MAX_IMAGE_HEIGHT ?? _mediaSettings.MaximumImageSize.ToString(),
+                THUMBS_VIEW_WIDTH = existingConfiguration?.THUMBS_VIEW_WIDTH ?? 140,
+                THUMBS_VIEW_HEIGHT = existingConfiguration?.THUMBS_VIEW_HEIGHT ?? 120,
+                PREVIEW_THUMB_WIDTH = existingConfiguration?.PREVIEW_THUMB_WIDTH ?? 300,
+                PREVIEW_THUMB_HEIGHT = existingConfiguration?.PREVIEW_THUMB_HEIGHT ?? 200,
+                MAX_IMAGE_WIDTH = existingConfiguration?.MAX_IMAGE_WIDTH ?? _mediaSettings.MaximumImageSize,
+                MAX_IMAGE_HEIGHT = existingConfiguration?.MAX_IMAGE_HEIGHT ?? _mediaSettings.MaximumImageSize,
                 DEFAULTVIEW = existingConfiguration?.DEFAULTVIEW ?? "list",
-                FORBIDDEN_UPLOADS = existingConfiguration?.FORBIDDEN_UPLOADS ?? "zip js jsp jsb mhtml mht xhtml xht php phtml " +
-                    "php3 php4 php5 phps shtml jhtml pl sh py cgi exe application gadget hta cpl msc jar vb jse ws wsf wsc wsh " +
-                    "ps1 ps2 psc1 psc2 msh msh1 msh2 inf reg scf msp scr dll msi vbs bat com pif cmd vxd cpl htpasswd htaccess",
+                FORBIDDEN_UPLOADS = existingConfiguration?.FORBIDDEN_UPLOADS ?? string.Join(" ", NopRoxyFilemanDefaults.ForbiddenUploadExtensions),
                 ALLOWED_UPLOADS = existingConfiguration?.ALLOWED_UPLOADS ?? string.Empty,
                 FILEPERMISSIONS = existingConfiguration?.FILEPERMISSIONS ?? "0644",
                 DIRPERMISSIONS = existingConfiguration?.DIRPERMISSIONS ?? "0755",
@@ -444,6 +393,10 @@ namespace Nop.Services.Media.RoxyFileman
             //save the file
             var text = JsonConvert.SerializeObject(configuration, Formatting.Indented);
             await _fileProvider.WriteAllTextAsync(filePath, text, Encoding.UTF8);
+
+            Singleton<RoxyFilemanConfig>.Instance = configuration;
+
+            return configuration;
         }
 
         /// <summary>

@@ -262,7 +262,7 @@ namespace Nop.Web.Framework.Infrastructure
             // services.AddTransient<DatabaseRoxyFilemanService>();
             // services.AddTransient<FileRoxyFilemanService>();
 
-            services.AddScoped<IRoxyFilemanService, FileRoxyFilemanService>();
+            services.AddScoped<IRoxyFilemanService, RoxyFilemanService>();
 
             services.AddScoped<IRoxyFilemanFileProvider>(serviceProvider =>
             {

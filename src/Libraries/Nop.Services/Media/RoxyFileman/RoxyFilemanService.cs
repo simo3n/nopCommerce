@@ -1,5 +1,16 @@
+using System;
+using System.Collections;
+using System.Collections.Generic;
+using System.IO;
 using System.Linq;
+using System.Text;
+using System.Text.RegularExpressions;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Newtonsoft.Json;
+using Nop.Core;
+using Nop.Core.Domain.Media;
+using Nop.Core.Infrastructure;
 
 namespace Nop.Services.Media.RoxyFileman
 {
@@ -8,15 +19,21 @@ namespace Nop.Services.Media.RoxyFileman
 
         #region Fields
 
-        private readonly IRoxyFilemanFileProvider _fileProvider;
+        protected readonly IHttpContextAccessor _httpContextAccessor;
+        protected readonly IRoxyFilemanFileProvider _fileProvider;
+        protected readonly IWorkContext _workContext;
+        protected readonly MediaSettings _mediaSettings;
 
         #endregion
 
         #region Ctor
 
-        public RoxyFilemanService(IRoxyFilemanFileProvider fileProvider)
+        public RoxyFilemanService(IHttpContextAccessor httpContextAccessor,IRoxyFilemanFileProvider fileProvider, IWorkContext workContext, MediaSettings mediaSettings)
         {
+            _httpContextAccessor = httpContextAccessor;
             _fileProvider = fileProvider;
+            _workContext = workContext;
+            _mediaSettings = mediaSettings;
         }
 
         #endregion
@@ -28,34 +45,78 @@ namespace Nop.Services.Media.RoxyFileman
         /// </summary>
         /// <param name="path">Path to the file</param>
         /// <returns>
-        /// A task that represents the asynchronous operation
-        /// The task result contains the rue if the file can be handled; otherwise false
+        /// The result contains the rue if the file can be handled; otherwise false
         /// </returns>
-        protected virtual async Task<bool> CanHandleFileAsync(string path)
+        protected virtual bool CanHandleFile(string path)
         {
-            var fileExtension = _fileProvider.GetFileNameWithoutExtension(path).ToLowerInvariant();
+            var result = false;
 
-            return !NopRoxyFilemanDefaults.ForbiddenUploadExtensions.Contains(fileExtension);
+            var fileExtension = Path.GetExtension(path).Replace(".", string.Empty).ToLowerInvariant();
+
+            var roxyConfig = Singleton<RoxyFilemanConfig>.Instance;
+
+            var forbiddenUploads = roxyConfig.FORBIDDEN_UPLOADS.Trim().ToLowerInvariant();
+            if (!string.IsNullOrEmpty(forbiddenUploads))
+            {
+                var forbiddenFileExtensions = new ArrayList(Regex.Split(forbiddenUploads, "\\s+"));
+                result = !forbiddenFileExtensions.Contains(fileExtension);
+            }
+
+            var allowedUploads = roxyConfig.ALLOWED_UPLOADS.Trim().ToLowerInvariant();
+            if (string.IsNullOrEmpty(allowedUploads))
+                return result;
+
+            var allowedFileExtensions = new ArrayList(Regex.Split(allowedUploads, "\\s+"));
+            return allowedFileExtensions.Contains(fileExtension);
+        }
+
+        protected virtual HttpResponse GetJsonResponse()
+        {
+            var response = GetHttpContext().Response;
+
+            response.Headers.TryAdd("Content-Type", "application/json");
+
+            return response;
+        }
+
+        /// <summary>
+        /// Get the http context
+        /// </summary>
+        /// <returns>Http context</returns>
+        protected virtual HttpContext GetHttpContext()
+        {
+            return _httpContextAccessor.HttpContext;
         }
 
         #endregion
 
-        public Task ConfigureAsync()
+        public async Task ConfigureAsync()
         {
-            throw new System.NotImplementedException();
+            var currentPathBase = _httpContextAccessor.HttpContext.Request.PathBase.ToString();
+            var currentLanguage = await _workContext.GetWorkingLanguageAsync();
+
+            await _fileProvider.CreateConfigurationAsync(currentPathBase, currentLanguage.UniqueSeoCode);
         }
 
-        public Task CopyDirectoryAsync(string sourcePath, string destinationPath)
+        public async Task CopyDirectoryAsync(string sourcePath, string destinationPath)
         {
-            throw new System.NotImplementedException();
+            var sourceDirInfo = _fileProvider.GetFileInfo(sourcePath);
+
+            if (!sourceDirInfo.Exists || !sourceDirInfo.IsDirectory)
+                throw new Exception(await GetLanguageResourceAsync("E_CopyDirInvalidPath"));
+
+            var destinationDirInfo = _fileProvider.GetFileInfo(destinationPath);
+
+            if (!destinationDirInfo.IsDirectory)
+                throw new Exception(await GetLanguageResourceAsync("E_CopyDirInvalidPath"));
+
+            if (destinationDirInfo.Exists)
+                throw new Exception(await GetLanguageResourceAsync("E_DirAlreadyExists"));
+
+            _fileProvider.CopyDirectory(sourcePath, destinationPath);
         }
 
         public Task CopyFileAsync(string sourcePath, string destinationPath)
-        {
-            throw new System.NotImplementedException();
-        }
-
-        public Task CreateConfigurationAsync()
         {
             throw new System.NotImplementedException();
         }
@@ -105,9 +166,29 @@ namespace Nop.Services.Media.RoxyFileman
             throw new System.NotImplementedException();
         }
 
-        public Task GetDirectoriesAsync(string type)
+        public async Task GetDirectoriesAsync(string type)
         {
-            throw new System.NotImplementedException();
+            // if (!_fileProvider.DirectoryExists(rootDirectoryPath))
+            //     throw new Exception("Invalid files root directory. Check your configuration.");
+
+            var contents = _fileProvider.GetDirectories(type);
+
+            var result = new List<object>();
+
+            foreach (var fName in contents)
+            {
+                var (path, countFiles, countDirectories) = fName;
+
+                result.Add(new {
+                    p = path,
+                    f = countFiles,
+                    d = countDirectories
+                });
+            }
+
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(result);
         }
 
         public string GetErrorResponse(string message = null)

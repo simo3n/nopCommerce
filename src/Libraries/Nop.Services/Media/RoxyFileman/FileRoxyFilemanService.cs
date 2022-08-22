@@ -203,11 +203,8 @@ namespace Nop.Services.Media.RoxyFileman
         /// <returns>A task that represents the asynchronous operation</returns>
         public virtual async Task ConfigureAsync()
         {
-            await CreateConfigurationAsync();
-
-            var existingText = await _fileProvider.ReadAllTextAsync(GetConfigurationFilePath(), Encoding.UTF8);
-            var config = JsonConvert.DeserializeObject<Dictionary<string, string>>(existingText);
-            _fileRootPath = _fileProvider.GetAbsolutePath(config["FILES_ROOT"]);
+            var configuration = await CreateConfigurationAsync();
+            _fileRootPath = _fileProvider.GetAbsolutePath(configuration.FILES_ROOT);
         }
 
         #endregion
@@ -661,9 +658,9 @@ namespace Nop.Services.Media.RoxyFileman
                         if (GetFileType(new FileInfo(uniqueFileName).Extension) != "image")
                             continue;
 
-                        _ = int.TryParse(await GetSettingAsync("MAX_IMAGE_WIDTH"), out var w);
-                        _ = int.TryParse(await GetSettingAsync("MAX_IMAGE_HEIGHT"), out var h);
-                        ImageResize(destinationFile, destinationFile, w, h);
+                        var roxyConfig = Singleton<RoxyFilemanConfig>.Instance;
+
+                        ImageResize(destinationFile, destinationFile, roxyConfig.MAX_IMAGE_WIDTH, roxyConfig.MAX_IMAGE_HEIGHT);
                     }
                     else
                     {

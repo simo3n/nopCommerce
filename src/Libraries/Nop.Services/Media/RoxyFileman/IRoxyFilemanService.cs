@@ -20,12 +20,6 @@ namespace Nop.Services.Media.RoxyFileman
         /// </summary>
         string GetConfigurationFilePath();
 
-        /// <summary>
-        /// Create configuration file for RoxyFileman
-        /// </summary>
-        /// <returns>A task that represents the asynchronous operation</returns>
-        Task CreateConfigurationAsync();
-
         #endregion
 
         #region Directories
