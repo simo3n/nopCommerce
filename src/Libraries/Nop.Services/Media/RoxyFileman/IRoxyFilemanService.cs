@@ -164,23 +164,6 @@ namespace Nop.Services.Media.RoxyFileman
         #region Others
 
         /// <summary>
-        /// Get the string to write an error response
-        /// </summary>
-        /// <param name="message">Additional message</param>
-        /// <returns>String to write to the response</returns>
-        string GetErrorResponse(string message = null);
-
-        /// <summary>
-        /// Get the language resource value
-        /// </summary>
-        /// <param name="key">Language resource key</param>
-        /// <returns>
-        /// A task that represents the asynchronous operation
-        /// The task result contains the language resource value
-        /// </returns>
-        Task<string> GetLanguageResourceAsync(string key);
-
-        /// <summary>
         /// Whether the request is made with ajax 
         /// </summary>
         /// <returns>True or false</returns>

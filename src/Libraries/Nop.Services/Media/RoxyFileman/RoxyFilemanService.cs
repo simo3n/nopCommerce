@@ -3,6 +3,7 @@ using System.Collections;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Net;
 using System.Text;
 using System.Text.RegularExpressions;
 using System.Threading.Tasks;
@@ -100,30 +101,27 @@ namespace Nop.Services.Media.RoxyFileman
 
         public async Task CopyDirectoryAsync(string sourcePath, string destinationPath)
         {
-            var sourceDirInfo = _fileProvider.GetFileInfo(sourcePath);
-
-            if (!sourceDirInfo.Exists || !sourceDirInfo.IsDirectory)
-                throw new Exception(await GetLanguageResourceAsync("E_CopyDirInvalidPath"));
-
-            var destinationDirInfo = _fileProvider.GetFileInfo(destinationPath);
-
-            if (!destinationDirInfo.IsDirectory)
-                throw new Exception(await GetLanguageResourceAsync("E_CopyDirInvalidPath"));
-
-            if (destinationDirInfo.Exists)
-                throw new Exception(await GetLanguageResourceAsync("E_DirAlreadyExists"));
-
             _fileProvider.CopyDirectory(sourcePath, destinationPath);
+
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
-        public Task CopyFileAsync(string sourcePath, string destinationPath)
+        public async Task CopyFileAsync(string sourcePath, string destinationPath)
         {
-            throw new System.NotImplementedException();
+            _fileProvider.CopyFile(sourcePath, destinationPath);
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
-        public Task CreateDirectoryAsync(string parentDirectoryPath, string name)
+        public async Task CreateDirectoryAsync(string parentDirectoryPath, string name)
         {
-            throw new System.NotImplementedException();
+            _fileProvider.CreateDirectory(parentDirectoryPath, name);
+
+            var response = GetHttpContext().Response;
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
         public Task CreateImageThumbnailAsync(string path)
@@ -131,14 +129,21 @@ namespace Nop.Services.Media.RoxyFileman
             throw new System.NotImplementedException();
         }
 
-        public Task DeleteDirectoryAsync(string path)
+        public async Task DeleteDirectoryAsync(string path)
         {
-            throw new System.NotImplementedException();
+            _fileProvider.DeleteDirectory(path);
+
+            var response = GetHttpContext().Response;
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
-        public Task DeleteFileAsync(string path)
+        public async Task DeleteFileAsync(string path)
         {
-            throw new System.NotImplementedException();
+            _fileProvider.DeleteFile(path);
+
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
         public Task DownloadDirectoryAsync(string path)
@@ -146,9 +151,18 @@ namespace Nop.Services.Media.RoxyFileman
             throw new System.NotImplementedException();
         }
 
-        public Task DownloadFileAsync(string path)
+        public async Task DownloadFileAsync(string path)
         {
-            throw new System.NotImplementedException();
+            var file = _fileProvider.GetFileInfo(path);
+
+            if (file.Exists)
+            {
+                var response = GetHttpContext().Response;
+                response.Clear();
+                response.Headers.ContentDisposition = $"attachment; filename=\"{WebUtility.UrlEncode(file.Name)}\"";
+                response.ContentType = MimeTypes.ApplicationForceDownload;
+                await response.SendFileAsync(file);
+            }
         }
 
         public Task FlushAllImagesOnDiskAsync(bool removeOriginal = true)
@@ -175,13 +189,11 @@ namespace Nop.Services.Media.RoxyFileman
 
             var result = new List<object>();
 
-            foreach (var fName in contents)
+            foreach (var (path, countFiles, countDirectories) in contents)
             {
-                var (path, countFiles, countDirectories) = fName;
-
                 result.Add(new
                 {
-                    p = path,
+                    p = path.Replace("\\", "/"),
                     f = countFiles,
                     d = countDirectories
                 });
@@ -192,17 +204,12 @@ namespace Nop.Services.Media.RoxyFileman
             await response.WriteAsJsonAsync(result);
         }
 
-        public string GetErrorResponse(string message = null)
-        {
-            throw new System.NotImplementedException();
-        }
-
         public async Task GetFilesAsync(string directoryPath, string type)
         {
             var result = _fileProvider.GetFiles(directoryPath, type)
                 .Select(f => new
                 {
-                    p = f.Name,
+                    p = f.RelativePath.Replace("\\", "/"),
                     t = f.LastWriteTime.ToUnixTimeSeconds(),
                     s = f.FileLength,
                     w = f.Width,
@@ -212,11 +219,6 @@ namespace Nop.Services.Media.RoxyFileman
             var response = GetHttpContext().Response;
 
             await response.WriteAsJsonAsync(result);
-        }
-
-        public Task<string> GetLanguageResourceAsync(string key)
-        {
-            throw new System.NotImplementedException();
         }
 
         public bool IsAjaxRequest()
@@ -236,19 +238,36 @@ namespace Nop.Services.Media.RoxyFileman
             await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
-        public Task MoveFileAsync(string sourcePath, string destinationPath)
+        public async Task MoveFileAsync(string sourcePath, string destinationPath)
         {
-            throw new System.NotImplementedException();
+            if (!CanHandleFile(sourcePath) && !CanHandleFile(destinationPath))
+                throw new RoxyFilemanException("E_FileExtensionForbidden");
+
+            _fileProvider.FileMove(sourcePath, destinationPath);
+
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
-        public Task RenameDirectoryAsync(string sourcePath, string newName)
+        public async Task RenameDirectoryAsync(string sourcePath, string newName)
         {
-            throw new System.NotImplementedException();
+            _fileProvider.RenameDirectory(sourcePath, newName);
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
-        public Task RenameFileAsync(string sourcePath, string newName)
+        public async Task RenameFileAsync(string sourcePath, string newName)
         {
-            throw new System.NotImplementedException();
+            if (!CanHandleFile(sourcePath) && !CanHandleFile(newName))
+                throw new RoxyFilemanException("E_FileExtensionForbidden");
+
+            _fileProvider.RenameFile(sourcePath, newName);
+
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
         public Task UploadFilesAsync(string directoryPath)

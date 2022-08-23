@@ -21,10 +21,9 @@ namespace Nop.Services.Media.RoxyFileman
         /// <returns></returns>
         public RoxyFilemanException(string key) : base(GetLocalizedMessage(key))
         {
-
         }
 
-        public RoxyFilemanException(string message, Exception innerException) : base(message, innerException)
+        public RoxyFilemanException(string key, Exception innerException) : base(GetLocalizedMessage(key), innerException)
         {
         }
 

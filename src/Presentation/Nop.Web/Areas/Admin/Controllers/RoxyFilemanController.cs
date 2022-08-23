@@ -3,6 +3,7 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Primitives;
+using Newtonsoft.Json;
 using Nop.Services.Media.RoxyFileman;
 using Nop.Services.Security;
 
@@ -121,16 +122,18 @@ namespace Nop.Web.Areas.Admin.Controllers
                         await _roxyFilemanService.UploadFilesAsync(HttpContext.Request.Form["d"]);
                         break;
                     default:
-                        await HttpContext.Response.WriteAsync(_roxyFilemanService.GetErrorResponse("This action is not implemented."));
+                        await HttpContext.Response.WriteAsJsonAsync(new { res = "error", msg = "This action is not implemented." });
                         break;
                 }
             }
             catch (Exception ex)
             {
+                var roxyError = new { res = "error", msg = ex.Message };
+
                 if (action == "UPLOAD" && !_roxyFilemanService.IsAjaxRequest())
-                    await HttpContext.Response.WriteAsync($"<script>parent.fileUploaded({_roxyFilemanService.GetErrorResponse(await _roxyFilemanService.GetLanguageResourceAsync("E_UploadNoFiles"))});</script>");
+                    await HttpContext.Response.WriteAsync($"<script>parent.fileUploaded({JsonConvert.SerializeObject(roxyError)});</script>");
                 else
-                    await HttpContext.Response.WriteAsync(_roxyFilemanService.GetErrorResponse(ex.Message));
+                    await HttpContext.Response.WriteAsJsonAsync(roxyError);
             }
         }
 
