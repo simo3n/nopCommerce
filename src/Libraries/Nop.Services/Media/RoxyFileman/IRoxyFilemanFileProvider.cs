@@ -1,6 +1,7 @@
 using System.Collections.Generic;
 using System.Threading.Tasks;
 using Microsoft.Extensions.FileProviders;
+using Nop.Core.Infrastructure;
 
 namespace Nop.Services.Media.RoxyFileman
 {
@@ -17,5 +18,17 @@ namespace Nop.Services.Media.RoxyFileman
         void CopyDirectory(string sourcePath, string destinationPath);
 
         IEnumerable<(string relativePath, int countFiles, int countDirectories)> GetDirectories(string type, bool isRecursive = true, string rootDirectoryPath = "");
+
+        IEnumerable<RoxyImageInfo> GetFiles(string directoryPath = "", string type = "");
+
+        /// <summary>
+        /// Moves a file or a directory and its contents to a new location
+        /// </summary>
+        /// <param name="sourceDirName">The path of the file or directory to move</param>
+        /// <param name="destDirName">
+        /// The path to the new location for sourceDirName. If sourceDirName is a file, then destDirName
+        /// must also be a file name
+        /// </param>
+        void DirectoryMove(string sourceDirName, string destDirName);
     }
 }

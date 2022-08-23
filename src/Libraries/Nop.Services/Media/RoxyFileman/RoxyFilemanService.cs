@@ -28,7 +28,7 @@ namespace Nop.Services.Media.RoxyFileman
 
         #region Ctor
 
-        public RoxyFilemanService(IHttpContextAccessor httpContextAccessor,IRoxyFilemanFileProvider fileProvider, IWorkContext workContext, MediaSettings mediaSettings)
+        public RoxyFilemanService(IHttpContextAccessor httpContextAccessor, IRoxyFilemanFileProvider fileProvider, IWorkContext workContext, MediaSettings mediaSettings)
         {
             _httpContextAccessor = httpContextAccessor;
             _fileProvider = fileProvider;
@@ -179,7 +179,8 @@ namespace Nop.Services.Media.RoxyFileman
             {
                 var (path, countFiles, countDirectories) = fName;
 
-                result.Add(new {
+                result.Add(new
+                {
                     p = path,
                     f = countFiles,
                     d = countDirectories
@@ -196,9 +197,21 @@ namespace Nop.Services.Media.RoxyFileman
             throw new System.NotImplementedException();
         }
 
-        public Task GetFilesAsync(string directoryPath, string type)
+        public async Task GetFilesAsync(string directoryPath, string type)
         {
-            throw new System.NotImplementedException();
+            var result = _fileProvider.GetFiles(directoryPath, type)
+                .Select(f => new
+                {
+                    p = f.Name,
+                    t = f.LastWriteTime.ToUnixTimeSeconds(),
+                    s = f.FileLength,
+                    w = f.Width,
+                    h = f.Height
+                });
+
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(result);
         }
 
         public Task<string> GetLanguageResourceAsync(string key)
@@ -211,9 +224,16 @@ namespace Nop.Services.Media.RoxyFileman
             throw new System.NotImplementedException();
         }
 
-        public Task MoveDirectoryAsync(string sourcePath, string destinationPath)
+        public async Task MoveDirectoryAsync(string sourcePath, string destinationPath)
         {
-            throw new System.NotImplementedException();
+            if (destinationPath.IndexOf(sourcePath, StringComparison.InvariantCulture) == 0)
+                throw new RoxyFilemanException("E_CannotMoveDirToChild");
+
+            _fileProvider.DirectoryMove(sourcePath, destinationPath);
+
+            var response = GetHttpContext().Response;
+
+            await response.WriteAsJsonAsync(new { res = "ok" });
         }
 
         public Task MoveFileAsync(string sourcePath, string destinationPath)

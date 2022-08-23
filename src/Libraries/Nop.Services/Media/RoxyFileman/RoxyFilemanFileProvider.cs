@@ -23,6 +23,8 @@ namespace Nop.Services.Media.RoxyFileman
 
         #endregion
 
+        #region Ctor
+
         public RoxyFilemanFileProvider(INopFileProvider nopFileProvider) : base(nopFileProvider.Combine(nopFileProvider.WebRootPath, NopRoxyFilemanDefaults.DefaultRootDirectory))
         {
             _nopFileProvider = nopFileProvider;
@@ -33,6 +35,8 @@ namespace Nop.Services.Media.RoxyFileman
             _pictureService = pictureService;
             _mediaSettings = mediaSettings;
         }
+
+        #endregion
 
         #region Utils
 
@@ -75,26 +79,17 @@ namespace Nop.Services.Media.RoxyFileman
         /// </summary>
         /// <param name="fileExtension">File extension</param>
         /// <returns>File type</returns>
-        protected virtual string GetFileType(string fileExtension)
+        protected virtual string GetFileType(string subpath)
         {
-            var fileType = "file";
+            var fileExtension = _nopFileProvider.GetFileExtension(subpath)?.ToLowerInvariant();
 
-            fileExtension = fileExtension.ToLowerInvariant();
-            if (fileExtension == ".jpg" || fileExtension == ".jpeg" || fileExtension == ".png" || fileExtension == ".gif" || fileExtension == ".webp" || fileExtension == ".svg")
-                fileType = "image";
-
-            if (fileExtension == ".swf" || fileExtension == ".flv")
-                fileType = "flash";
-
-            // Media file types supported by HTML5
-            if (fileExtension == ".mp4" || fileExtension == ".webm" // video
-                || fileExtension == ".ogg") // audio
-                fileType = "media";
-
-            // These media extensions are supported by tinyMCE
-            if (fileExtension == ".mov" // video
-                || fileExtension == ".m4a" || fileExtension == ".mp3" || fileExtension == ".wav") // audio
-                fileType = "media";
+            return fileExtension switch
+            {
+                ".jpg" or ".jpeg" or ".png" or ".gif" or ".webp" or ".svg" => "image",
+                ".swf" or ".flv" => "flash",
+                ".mp4" or ".webm" or ".ogg" or ".mov" or ".m4a" or ".mp3" or ".wav" => "media",
+                _ => "file"
+            };
 
             /* These media extensions are not supported by HTML5 or tinyMCE out of the box
              * but may possibly be supported if You find players for them.
@@ -106,8 +101,16 @@ namespace Nop.Services.Media.RoxyFileman
              *     || fileExtension == ".asf" || fileExtension == ".asx" || fileExtension == ".wma"
              *     || fileExtension == ".mid" || fileExtension == ".mp2") // audio
              *     fileType = "media"; */
+        }
 
-             return fileType;
+        protected virtual string GetFullPath(string path)
+        {
+            var fullPath = Path.GetFullPath(Path.Combine(Root, path));
+
+            if (!IsUnderneathRoot(fullPath))
+                throw new Exception(path);
+
+            return fullPath;
         }
 
         /// <summary>
@@ -140,6 +143,12 @@ namespace Nop.Services.Media.RoxyFileman
             }
 
             return format;
+        }
+
+        protected virtual bool IsUnderneathRoot(string fullPath)
+        {
+            return fullPath
+                .StartsWith(Root, StringComparison.OrdinalIgnoreCase);
         }
 
         /// <summary>
@@ -186,6 +195,29 @@ namespace Nop.Services.Media.RoxyFileman
         }
 
         #endregion
+
+        #region Methods
+
+        /// <summary>
+        /// Moves a file or a directory and its contents to a new location
+        /// </summary>
+        /// <param name="sourceDirName">The path of the file or directory to move</param>
+        /// <param name="destDirName">
+        /// The path to the new location for sourceDirName. If sourceDirName is a file, then destDirName
+        /// must also be a file name
+        /// </param>
+        public virtual void DirectoryMove(string sourceDirName, string destDirName)
+        {
+            var sourceDirInfo = new DirectoryInfo(GetFullPath(sourceDirName));
+            if (!sourceDirInfo.Exists)
+                throw new RoxyFilemanException("E_MoveDirInvalisPath");
+
+            var destinationDirInfo = new DirectoryInfo(GetFullPath(destDirName));
+            if (destinationDirInfo.Exists)
+                throw new RoxyFilemanException("E_MoveDirInvalisPath");
+
+            _nopFileProvider.DirectoryMove(sourceDirInfo.FullName, destinationDirInfo.FullName);
+        }
 
         public new IFileInfo GetFileInfo(string subpath)
         {
@@ -333,12 +365,30 @@ namespace Nop.Services.Media.RoxyFileman
             }
 
             string getRelativePath(string name) => Path.Combine(rootDirectoryPath, name);
-            bool isMatchType(string name) => string.IsNullOrEmpty(type) || GetFileType(_nopFileProvider.GetFileExtension(name)) == type;
+            bool isMatchType(string name) => string.IsNullOrEmpty(type) || GetFileType(name) == type;
         }
 
-        public virtual IEnumerable<(string relativePath, DateTime lastWriteTime, int fileLength, int width, int height)> GetFiles(string rootDirectoryPath = "")
+        public virtual IEnumerable<RoxyImageInfo> GetFiles(string directoryPath = "", string type = "")
         {
+            var files = GetDirectoryContents(directoryPath);
 
+            return files
+                .Where(x => isMatchType(x.Name))
+                .Select(f => {
+                    var (width, height) = getImageMeasures(f.CreateReadStream());
+                    return new RoxyImageInfo(f.Name, f.LastModified, f.Length, width, height);
+                });
+
+            bool isMatchType(string name) => string.IsNullOrEmpty(type) || GetFileType(name) == type;
+
+            (int width, int height) getImageMeasures(Stream imageStream)
+            {
+                    using var skData = SKData.Create(imageStream);
+                    var image = SKBitmap.DecodeBounds(skData);
+                    return (image.Width, image.Height);
+            }
         }
+
+        #endregion
     }
 }
