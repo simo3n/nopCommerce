@@ -53,11 +53,11 @@ namespace Nop.Plugin.Customers.AgentProfiles
             {
                 SystemName = systemName,
                 Title = "Agenti",
-                IconClass = "far fa-dot-circle",
+                IconClass = "far fa-user",
                 Visible = true,
             };
 
-            var subItem = new SiteMapNode()
+            var subItem1 = new SiteMapNode()
             {
                 SystemName = "Provvigioni",
                 Title = "Provvigioni",
@@ -68,7 +68,19 @@ namespace Nop.Plugin.Customers.AgentProfiles
                 RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } }
             };
 
-            menuItem.ChildNodes.Add(subItem);
+            var subItem2 = new SiteMapNode()
+            {
+                SystemName = "Ordini clienti",
+                Title = "Ordini clienti",
+                ControllerName = "Provvigioni",
+                ActionName = "List",
+                IconClass = "far fa-dot-circle",
+                Visible = true,
+                RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } }
+            };
+
+            menuItem.ChildNodes.Add(subItem1);
+            menuItem.ChildNodes.Add(subItem2);
 
             var pluginNode = rootNode.ChildNodes.FirstOrDefault(x => x.SystemName == systemName);
 
