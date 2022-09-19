@@ -1,14 +1,16 @@
 ﻿using FluentMigrator;
+using Nop.Data.Extensions;
 using Nop.Data.Migrations;
+using Nop.Plugin.Customers.AgentProfiles.Domains;
 
 namespace Nop.Plugin.Customers.AgentProfiles.Migrations
 {
-    [NopMigration("", "Nop.Plugin.Customers.AgentProfiles schema", MigrationProcessType.Installation)]
-    public class SchemaMigration : AutoReversingMigration
+    [NopMigration("2022-09-19 15:31:00", "AgentProfiles initial migration", MigrationProcessType.NoMatter)]
+    public class InitialMigration : AutoReversingMigration
     {
         private readonly IMigrationManager _migrationManager;
 
-        public SchemaMigration(IMigrationManager migrationManager)
+        public InitialMigration(IMigrationManager migrationManager)
         {
             _migrationManager = migrationManager;
         }
@@ -18,6 +20,8 @@ namespace Nop.Plugin.Customers.AgentProfiles.Migrations
         /// </summary>
         public override void Up()
         {
+            Create.TableFor<Agent>();
+            Create.TableFor<AddressAgentMapping>();
         }
     }
 }

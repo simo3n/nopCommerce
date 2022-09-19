@@ -11,10 +11,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Compile Remove="Migrations\SchemaMigration.cs" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Remove="logo.jpg" />
 	<None Remove="plugin.json" />
     <None Remove="Views\_ViewImports.cshtml" />
@@ -52,7 +48,6 @@
     <Folder Include="Controllers\" />
     <Folder Include="Extensions\" />
     <Folder Include="Factories\" />
-    <Folder Include="Migrations\" />
     <Folder Include="Models\" />
     <Folder Include="Services\" />
   </ItemGroup>

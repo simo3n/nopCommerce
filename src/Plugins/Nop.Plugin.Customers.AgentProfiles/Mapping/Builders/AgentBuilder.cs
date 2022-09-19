@@ -4,12 +4,14 @@ using Nop.Plugin.Customers.AgentProfiles.Domains;
 
 namespace Nop.Plugin.Customers.AgentProfiles.Mapping.Builders
 {
-    public class PluginBuilder : NopEntityBuilder<CustomTable>
+    public class AgentBuilder : NopEntityBuilder<Agent>
     {
         #region Methods
 
         public override void MapEntity(CreateTableExpressionBuilder table)
         {
+            table
+                .WithColumn(nameof(Agent.Name)).AsString(100).NotNullable();
         }
 
         #endregion

@@ -60,7 +60,7 @@ namespace Nop.Plugin.Customers.AgentProfiles
             var subItem1 = new SiteMapNode()
             {
                 SystemName = "Provvigioni",
-                Title = "Provvigioni",
+                Title = "Regole prov",
                 ControllerName = "Provvigioni",
                 ActionName = "List",
                 IconClass = "far fa-dot-circle",
