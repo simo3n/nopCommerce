@@ -3,7 +3,9 @@ using System.Threading.Tasks;
 using Microsoft.AspNetCore.Routing;
 using Nop.Core.Domain.Customers;
 using Nop.Services.Customers;
+using Nop.Services.Localization;
 using Nop.Services.Plugins;
+using Nop.Services.Security;
 using Nop.Web.Framework;
 using Nop.Web.Framework.Menu;
 
@@ -12,10 +14,14 @@ namespace Nop.Plugin.Customers.AgentProfiles
     public class AgentProfilesPlugin : BasePlugin, IAdminMenuPlugin
     {
         private readonly ICustomerService _customerService;
+        private readonly IPermissionService _permissionService;
+        private readonly ILocalizationService _localizationService;
 
-        public AgentProfilesPlugin(ICustomerService customerService)
+        public AgentProfilesPlugin(ICustomerService customerService, IPermissionService permissionService, ILocalizationService localizationService)
         {
             _customerService = customerService;
+            _permissionService = permissionService;
+            _localizationService = localizationService;
         }
 
         public override async Task InstallAsync()
@@ -45,51 +51,71 @@ namespace Nop.Plugin.Customers.AgentProfiles
             await base.UninstallAsync();
         }
 
-        public Task ManageSiteMapAsync(SiteMapNode rootNode)
+        public async Task ManageSiteMapAsync(SiteMapNode rootNode)
         {
-            string systemName = "Agents";
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageCustomers))
+                return;
 
-            var menuItem = new SiteMapNode()
+            var customersNode = rootNode.ChildNodes.FirstOrDefault(n => n.SystemName == "Customers");
+            if (customersNode is not null)
             {
-                SystemName = systemName,
-                Title = "Agenti",
-                IconClass = "far fa-user",
-                Visible = true,
-            };
+                var agentsNode = new SiteMapNode()
+                {
+                    SystemName = "Agents",
+                    Title = await _localizationService.GetResourceAsync("Admin.Customers.Agents"),
+                    ControllerName = "Agents",
+                    ActionName = "List",
+                    RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } },
+                    IconClass = "far fa-user",
+                    Visible = true,
+                };
 
-            var subItem1 = new SiteMapNode()
-            {
-                SystemName = "Provvigioni",
-                Title = "Regole prov",
-                ControllerName = "Provvigioni",
-                ActionName = "List",
-                IconClass = "far fa-dot-circle",
-                Visible = true,
-                RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } }
-            };
+                customersNode.ChildNodes.Add(agentsNode);
+            }
 
-            var subItem2 = new SiteMapNode()
-            {
-                SystemName = "Ordini clienti",
-                Title = "Ordini clienti",
-                ControllerName = "Provvigioni",
-                ActionName = "List",
-                IconClass = "far fa-dot-circle",
-                Visible = true,
-                RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } }
-            };
+            //string systemName = "Agents";
 
-            menuItem.ChildNodes.Add(subItem1);
-            menuItem.ChildNodes.Add(subItem2);
+            //var menuItem = new SiteMapNode()
+            //{
+            //    SystemName = systemName,
+            //    Title = "Agenti",
+            //    IconClass = "far fa-user",
+            //    Visible = true,
+            //};
 
-            var pluginNode = rootNode.ChildNodes.FirstOrDefault(x => x.SystemName == systemName);
+            //var subItem1 = new SiteMapNode()
+            //{
+            //    SystemName = "Provvigioni",
+            //    Title = "Regole prov",
+            //    ControllerName = "Provvigioni",
+            //    ActionName = "List",
+            //    IconClass = "far fa-dot-circle",
+            //    Visible = true,
+            //    RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } }
+            //};
 
-            if (pluginNode != null)
-                pluginNode.ChildNodes.Add(menuItem);
-            else
-                rootNode.ChildNodes.Add(menuItem);
+            //var subItem2 = new SiteMapNode()
+            //{
+            //    SystemName = "Ordini clienti",
+            //    Title = "Ordini clienti",
+            //    ControllerName = "Provvigioni",
+            //    ActionName = "List",
+            //    IconClass = "far fa-dot-circle",
+            //    Visible = true,
+            //    RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } }
+            //};
 
-            return Task.CompletedTask;
+            //menuItem.ChildNodes.Add(subItem1);
+            //menuItem.ChildNodes.Add(subItem2);
+
+            //var pluginNode = rootNode.ChildNodes.FirstOrDefault(x => x.SystemName == systemName);
+
+            //if (pluginNode != null)
+            //    pluginNode.ChildNodes.Add(menuItem);
+            //else
+            //    rootNode.ChildNodes.Add(menuItem);
+
+            await Task.CompletedTask;
         }
     }
 }
