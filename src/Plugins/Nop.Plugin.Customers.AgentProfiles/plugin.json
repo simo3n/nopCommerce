@@ -1,0 +1,11 @@
+﻿{
+  "Group": "Customers",
+  "FriendlyName": "Gestione profili agente",
+  "SystemName": "Customers.AgentProfiles",
+  "Version": "1.00",
+  "SupportedVersions": [ "4.50" ],
+  "Author": "Infotric",
+  "DisplayOrder": 1,
+  "FileName": "Nop.Plugin.Customers.AgentProfiles.dll",
+  "Description": "Plugin per la gestione dei profili agente"
+}
