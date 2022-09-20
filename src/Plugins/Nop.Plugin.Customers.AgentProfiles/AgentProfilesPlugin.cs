@@ -63,7 +63,7 @@ namespace Nop.Plugin.Customers.AgentProfiles
                 {
                     SystemName = "Agents",
                     Title = await _localizationService.GetResourceAsync("Admin.Customers.Agents"),
-                    ControllerName = "Agents",
+                    ControllerName = "Agent",
                     ActionName = "List",
                     RouteValues = new RouteValueDictionary() { { "area", AreaNames.Admin } },
                     IconClass = "far fa-user",

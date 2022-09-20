@@ -3,6 +3,8 @@ using Microsoft.AspNetCore.Mvc.Razor;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Nop.Core.Infrastructure;
+using Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories;
+using Nop.Plugin.Customers.AgentProfiles.Services;
 
 namespace Nop.Plugin.Customers.AgentProfiles.Infrastructure
 {
@@ -16,7 +18,8 @@ namespace Nop.Plugin.Customers.AgentProfiles.Infrastructure
             });
 
             //register services and interfaces
-            //services.AddScoped<CustomModelFactory, ICustomerModelFactory>();
+            services.AddScoped<IAgentModelFactory, AgentModelFactory>();
+            services.AddScoped<IAgentService, AgentService>();
         }
 
         public void Configure(IApplicationBuilder application)

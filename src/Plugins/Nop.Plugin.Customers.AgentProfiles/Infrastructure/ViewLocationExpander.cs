@@ -14,11 +14,11 @@ namespace Nop.Plugin.Customers.AgentProfiles.Infrastructure
         {
             if (context.AreaName == "Admin")
             {
-                viewLocations = new[] { $"/Plugins/Nop.Plugin.Customers.AgentProfiles/Areas/Admin/Views/{context.ControllerName}/{context.ViewName}.cshtml" }.Concat(viewLocations);
+                viewLocations = new[] { $"/Plugins/Customers.AgentProfiles/Areas/Admin/Views/{context.ControllerName}/{context.ViewName}.cshtml" }.Concat(viewLocations);
             }
             else
             {
-                viewLocations = new[] { $"/Plugins/Nop.Plugin.Customers.AgentProfiles/Views/{context.ControllerName}/{context.ViewName}.cshtml" }.Concat(viewLocations);
+                viewLocations = new[] { $"/Plugins/Customers.AgentProfiles/Views/{context.ControllerName}/{context.ViewName}.cshtml" }.Concat(viewLocations);
             }
 
             return viewLocations;
