@@ -1,8 +1,11 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Linq;
 using System.Threading.Tasks;
-using Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Extensions;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Infrastructure.Mapper.Extensions;
 using Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Models.Customers;
+using Nop.Plugin.Customers.AgentProfiles.Domains;
 using Nop.Plugin.Customers.AgentProfiles.Services;
 using Nop.Web.Framework.Models.Extensions;
 
@@ -29,6 +32,64 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories
         #endregion
 
         #region Methods
+
+        /// <summary>
+        /// Prepare agent model
+        /// </summary>
+        /// <param name="model">Agent model</param>
+        /// <param name="agent">Agent</param>
+        /// <returns>
+        /// A task that represents the asynchronous operation
+        /// The task result contains the agent model
+        /// </returns>
+        public virtual async Task<AgentModel> PrepareAgentModelAsync(AgentModel model, Agent agent)
+        {
+            if (agent != null)
+            {
+                model = agent.ToModel<AgentModel>();
+
+                //prepare available parent agents
+                await PrepareAgentsAsync(model.AvailableAgents);
+            }
+
+            return await Task.FromResult(model);
+        }
+
+        private async Task PrepareAgentsAsync(IList<SelectListItem> items)
+        {
+            if (items == null)
+                throw new ArgumentNullException(nameof(items));
+
+            //prepare available agents
+            var availableAgentItems = await GetAgentListAsync();
+            foreach (var agentItem in availableAgentItems)
+            {
+                items.Add(agentItem);
+            }
+        }
+
+        private async Task<List<SelectListItem>> GetAgentListAsync()
+        {
+            var agents = await _agentService.GetAllAgentsAsync();
+            var listItems = agents.Select(a => new SelectListItem
+            {
+                Text = a.Name,
+                Value = a.Id.ToString()
+            });
+
+            var result = new List<SelectListItem>();
+            //clone the list to ensure that "selected" property is not set
+            foreach (var item in listItems)
+            {
+                result.Add(new SelectListItem
+                {
+                    Text = item.Text,
+                    Value = item.Value
+                });
+            }
+
+            return result;
+        }
 
         /// <summary>
         /// Prepare agent search model
@@ -75,9 +136,7 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories
                     //fill in model values from the entity
                     var agentModel = agent.ToModel<AgentModel>();
 
-                    await Task.CompletedTask;
-
-                    return agentModel;
+                    return await Task.FromResult(agentModel);
                 });
             });
 

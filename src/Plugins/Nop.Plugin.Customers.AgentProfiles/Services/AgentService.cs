@@ -23,5 +23,15 @@ namespace Nop.Plugin.Customers.AgentProfiles.Services
 
             return agents;
         }
+
+        /// <summary>
+        /// Insert an agent
+        /// </summary>
+        /// <param name="agent">Agent</param>
+        /// <returns>A task that represents the asynchronous operation</returns>
+        public async Task InsertAgentAsync(Agent agent)
+        {
+            await _agentRepository.InsertAsync(agent);
+        }
     }
 }

@@ -7,5 +7,6 @@ namespace Nop.Plugin.Customers.AgentProfiles.Services
     public interface IAgentService
     {
         Task<IPagedList<Agent>> GetAllAgentsAsync();
+        Task InsertAgentAsync(Agent agent);
     }
 }

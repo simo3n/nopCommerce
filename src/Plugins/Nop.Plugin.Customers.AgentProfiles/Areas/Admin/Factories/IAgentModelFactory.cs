@@ -1,5 +1,6 @@
 ﻿using System.Threading.Tasks;
 using Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Models.Customers;
+using Nop.Plugin.Customers.AgentProfiles.Domains;
 
 namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories
 {
@@ -24,5 +25,7 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories
         /// The task result contains the agent list model
         /// </returns>
         Task<AgentListModel> PrepareAgentListModelAsync(AgentSearchModel searchModel);
+
+        Task<AgentModel> PrepareAgentModelAsync(AgentModel model, Agent agent);
     }
 }

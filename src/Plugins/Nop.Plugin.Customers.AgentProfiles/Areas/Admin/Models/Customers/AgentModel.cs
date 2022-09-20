@@ -1,4 +1,6 @@
-﻿using Nop.Web.Framework.Models;
+﻿using System.Collections.Generic;
+using Microsoft.AspNetCore.Mvc.Rendering;
+using Nop.Web.Framework.Models;
 using Nop.Web.Framework.Mvc.ModelBinding;
 
 namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Models.Customers
@@ -29,6 +31,16 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Models.Customers
         [NopResourceDisplayName("Admin.Customers.Agents.Fields.PageSize")]
         public int PageSize { get; set; }
 
+        public IList<SelectListItem> AvailableAgents { get; set; }
+
         #endregion
+    }
+
+    public partial record AgentLocalizedModel : ILocalizedLocaleModel
+    {
+        public int LanguageId { get; set; }
+
+        [NopResourceDisplayName("Admin.Customers.Agents.Fields.Name")]
+        public string Name { get; set; }
     }
 }

@@ -115,6 +115,10 @@
                                     ClassName =  NopColumnClassDefaults.CenterAll,
                                     Width = "50"
                                 },
+                                new ColumnProperty(nameof(AgentModel.Name))
+                                {
+                                    Title = T("Admin.Customers.Agents.Fields.Name").Text
+                                },
                                 new ColumnProperty(nameof(AgentModel.Id))
                                 {
                                     Title = T("Admin.Common.Edit").Text,
