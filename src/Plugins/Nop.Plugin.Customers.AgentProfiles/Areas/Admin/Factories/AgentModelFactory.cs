@@ -45,9 +45,7 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories
         public virtual async Task<AgentModel> PrepareAgentModelAsync(AgentModel model, Agent agent)
         {
             if (agent != null)
-            {
                 model = agent.ToModel<AgentModel>();
-            }
 
             //prepare available parent agents
             await PrepareAgentsAsync(model.AvailableAgents);
@@ -135,6 +133,16 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories
                 {
                     //fill in model values from the entity
                     var agentModel = agent.ToModel<AgentModel>();
+
+                    var currentAgent = agent;
+                    int parentAgentId = currentAgent.ParentAgentId;
+                    while (parentAgentId > 0)
+                    {
+                        var parentAgent = await _agentService.GetAgentByIdAsync(parentAgentId);
+                        agentModel.Name = $"{parentAgent.Name} >> {agentModel.Name}";
+
+                        parentAgentId = parentAgent.ParentAgentId;
+                    }
 
                     return await Task.FromResult(agentModel);
                 });

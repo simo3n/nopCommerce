@@ -72,7 +72,7 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Controllers
 
         #endregion
 
-        public virtual async Task<IActionResult> Create()
+        public async Task<IActionResult> Create()
         {
             if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageCustomers))
                 return AccessDeniedView();
@@ -85,7 +85,7 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Controllers
 
         [HttpPost, ParameterBasedOnFormName("save-continue", "continueEditing")]
         [FormValueRequired("save", "save-continue")]
-        public virtual async Task<IActionResult> Create(AgentModel model, bool continueEditing, IFormCollection form)
+        public async Task<IActionResult> Create(AgentModel model, bool continueEditing, IFormCollection form)
         {
             if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageCustomers))
                 return AccessDeniedView();
@@ -119,6 +119,84 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Controllers
 
             //if we got this far, something failed, redisplay form
             return View(model);
+        }
+
+        public async Task<IActionResult> Edit(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            //try to get an agent with the specified id
+            var agent = await _agentService.GetAgentByIdAsync(id);
+            if (agent == null)
+                return RedirectToAction("List");
+
+            //prepare model
+            var model = await _agentModelFactory.PrepareAgentModelAsync(null, agent);
+
+            return View(model);
+        }
+
+        [HttpPost, ParameterBasedOnFormName("save-continue", "continueEditing")]
+        public async Task<IActionResult> Edit(AgentModel model, bool continueEditing)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            //try to get an agent with the specified id
+            var agent = await _agentService.GetAgentByIdAsync(model.Id);
+            if (agent == null)
+                return RedirectToAction("List");
+
+            if (ModelState.IsValid)
+            {
+                agent = model.ToEntity(agent);
+                await _agentService.UpdateAgentAsync(agent);
+
+                ////locales
+                //await UpdateLocalesAsync(agent, model);
+
+                //await _categoryService.UpdateCategoryAsync(agent);
+
+                //activity log
+                //await _customerActivityService.InsertActivityAsync("EditCategory",
+                //    string.Format(await _localizationService.GetResourceAsync("ActivityLog.EditCategory"), agent.Name), agent);
+
+                _notificationService.SuccessNotification(await _localizationService.GetResourceAsync("Admin.Customers.Agents.Updated"));
+
+                if (!continueEditing)
+                    return RedirectToAction("List");
+
+                return RedirectToAction("Edit", new { id = agent.Id });
+            }
+
+            //prepare model
+            model = await _agentModelFactory.PrepareAgentModelAsync(model, agent);
+
+            //if we got this far, something failed, redisplay form
+            return View(model);
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            if (!await _permissionService.AuthorizeAsync(StandardPermissionProvider.ManageCustomers))
+                return AccessDeniedView();
+
+            //try to get an agent with the specified id
+            var agent = await _agentService.GetAgentByIdAsync(id);
+            if (agent == null)
+                return RedirectToAction("List");
+
+            await _agentService.DeleteAgentAsync(agent);
+
+            //activity log
+            //await _customerActivityService.InsertActivityAsync("DeleteCategory",
+            //    string.Format(await _localizationService.GetResourceAsync("ActivityLog.DeleteCategory"), agent.Name), agent);
+
+            _notificationService.SuccessNotification(await _localizationService.GetResourceAsync("Admin.Customers.Agents.Deleted"));
+
+            return RedirectToAction("List");
         }
     }
 }

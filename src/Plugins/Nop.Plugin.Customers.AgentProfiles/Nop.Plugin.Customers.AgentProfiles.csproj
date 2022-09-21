@@ -25,7 +25,6 @@
     <None Remove="Areas\Admin\Views\_ViewStart.cshtml" />
     <None Remove="logo.jpg" />
 	<None Remove="plugin.json" />
-    <None Remove="Views\_ViewImports.cshtml" />
   </ItemGroup>
 
   <ItemGroup>
@@ -37,6 +36,7 @@
     <Content Include="Areas\Admin\Views\Agent\Edit.cshtml">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>
       <CopyToPublishDirectory>PreserveNewest</CopyToPublishDirectory>
+      <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </Content>
     <Content Include="Areas\Admin\Views\Agent\List.cshtml">
       <ExcludeFromSingleFile>true</ExcludeFromSingleFile>

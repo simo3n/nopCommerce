@@ -1,25 +1,21 @@
-@model CategoryModel
+@model AgentModel
 @{
     //page title
-    ViewBag.PageTitle = T("Admin.Catalog.Categories.EditCategoryDetails").Text;
+    ViewBag.PageTitle = T("Admin.Customers.Agents.EditAgentDetails").Text;
     //active menu item (system name)
-    NopHtml.SetActiveMenuItemSystemName("Categories");
+    NopHtml.SetActiveMenuItemSystemName("Agents");
 }
 
-<form asp-controller="Category" asp-action="Edit" method="post" id="category-form">
+<form asp-controller="Agent" asp-action="Edit" method="post" id="agent-form">
     <div class="content-header clearfix">
         <h1 class="float-left">
-            @T("Admin.Catalog.Categories.EditCategoryDetails") - @Model.Name
+            @T("Admin.Customers.Agents.EditAgentDetails") - @Model.Name
             <small>
                 <i class="fas fa-arrow-circle-left"></i>
-                <a asp-action="List">@T("Admin.Catalog.Categories.BackToList")</a>
+                <a asp-action="List">@T("Admin.Customers.Agents.BackToList")</a>
             </small>
         </h1>
         <div class="float-right">
-            <button type="button" onclick="javascript:OpenWindow('@Url.RouteUrl("Category", new {SeName = Model.SeName})', 800, 600, true); return false;" class="btn btn-info">
-                <i class="far fa-eye"></i>
-                @T("Admin.Common.Preview")
-            </button>
             <button type="submit" name="save" class="btn btn-primary">
                 <i class="far fa-save"></i>
                 @T("Admin.Common.Save")
@@ -28,7 +24,7 @@
                 <i class="far fa-save"></i>
                 @T("Admin.Common.SaveContinue")
             </button>
-            <span id="category-delete" class="btn btn-danger">
+            <span id="agent-delete" class="btn btn-danger">
                 <i class="far fa-trash-alt"></i>
                 @T("Admin.Common.Delete")
             </span>
@@ -37,4 +33,4 @@
     </div>
     @await Html.PartialAsync("_CreateOrUpdate", Model)
 </form>
-<nop-delete-confirmation asp-model-id="@Model.Id" asp-button-id="category-delete" />
+<nop-delete-confirmation asp-model-id="@Model.Id" asp-button-id="agent-delete" />
