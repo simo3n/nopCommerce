@@ -16,6 +16,8 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Models.Customers
         {
             if (PageSize < 1)
                 PageSize = 5;
+
+            AvailableAgents = new List<SelectListItem>();
         }
 
         #endregion

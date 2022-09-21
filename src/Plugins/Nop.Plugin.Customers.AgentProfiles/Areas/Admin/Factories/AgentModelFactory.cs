@@ -47,10 +47,10 @@ namespace Nop.Plugin.Customers.AgentProfiles.Areas.Admin.Factories
             if (agent != null)
             {
                 model = agent.ToModel<AgentModel>();
-
-                //prepare available parent agents
-                await PrepareAgentsAsync(model.AvailableAgents);
             }
+
+            //prepare available parent agents
+            await PrepareAgentsAsync(model.AvailableAgents);
 
             return await Task.FromResult(model);
         }
