@@ -1,21 +1,26 @@
-﻿using System.Linq;
+﻿using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Routing;
 using Nop.Core.Domain.Customers;
+using Nop.Services.Cms;
 using Nop.Services.Customers;
 using Nop.Services.Localization;
 using Nop.Services.Plugins;
 using Nop.Services.Security;
 using Nop.Web.Framework;
+using Nop.Web.Framework.Infrastructure;
 using Nop.Web.Framework.Menu;
 
 namespace Nop.Plugin.Customers.AgentProfiles
 {
-    public class AgentProfilesPlugin : BasePlugin, IAdminMenuPlugin
+    public class AgentProfilesPlugin : BasePlugin, IAdminMenuPlugin, IWidgetPlugin
     {
         private readonly ICustomerService _customerService;
         private readonly IPermissionService _permissionService;
         private readonly ILocalizationService _localizationService;
+
+        public bool HideInWidgetList => false;
 
         public AgentProfilesPlugin(ICustomerService customerService, IPermissionService permissionService, ILocalizationService localizationService)
         {
@@ -116,6 +121,19 @@ namespace Nop.Plugin.Customers.AgentProfiles
             //    rootNode.ChildNodes.Add(menuItem);
 
             await Task.CompletedTask;
+        }
+
+        public Task<IList<string>> GetWidgetZonesAsync()
+        {
+            return Task.FromResult<IList<string>>(new List<string>
+            {
+                PublicWidgetZones.OrderSummaryContentBefore
+            });
+        }
+
+        public string GetWidgetViewComponentName(string widgetZone)
+        {
+            return "AgentShoppingCart";
         }
     }
 }
